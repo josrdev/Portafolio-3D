@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Un portafolio creativo para explorar. Bienvenido a mi espacio."
+    />
+    <meta name="theme-color" content="#080a11" />
+    <link id="room-model-source" rel="preload" href="/hubs-cyberpunk-office/source/CyberpunkOffice.glb?no-inline" as="fetch" crossorigin />
+    <link id="screen-model-source" rel="preload" href="/pantalla.glb?no-inline" as="fetch" crossorigin />
+    <link id="arm-model-source" rel="preload" href="/brazo.glb?no-inline" as="fetch" crossorigin />
+    <title>Portafolio — una experiencia para explorar</title>
+  </head>
+  <body>
+    <main id="experience" aria-label="Portafolio 3D interactivo">
+      <!-- A-Frame gestiona el canvas WebGL; main.js hi afegeix la sala, els models i els controls. -->
+      <a-scene
+        id="scene"
+        embedded
+        aria-hidden="true"
+        xr-mode-ui="enabled: false"
+        renderer="antialias: true; colorManagement: true; physicallyCorrectLights: false"
+      >
+        <a-entity id="portfolio-camera" camera="active: true; fov: 68" position="0 1.62 9"></a-entity>
+      </a-scene>
+      <div class="vignette" aria-hidden="true"></div>
+      <div class="welcome-hud" id="welcome-hud" role="status" aria-live="polite" aria-hidden="true">
+        <div class="welcome-hud-frame" aria-hidden="true">
+          <div class="welcome-radar">
+            <span class="welcome-radar-ring welcome-radar-ring-outer"></span>
+            <span class="welcome-radar-ring welcome-radar-ring-inner"></span>
+            <span class="welcome-radar-axis welcome-radar-axis-horizontal"></span>
+            <span class="welcome-radar-axis welcome-radar-axis-vertical"></span>
+            <span class="welcome-radar-sweep"></span>
+            <i class="welcome-radar-blip welcome-radar-blip-one"></i>
+            <i class="welcome-radar-blip welcome-radar-blip-two"></i>
+            <i class="welcome-radar-blip welcome-radar-blip-three"></i>
+            <span class="welcome-radar-center"></span>
+          </div>
+          <span class="welcome-corner welcome-corner-top-left"></span>
+          <span class="welcome-corner welcome-corner-top-right"></span>
+          <span class="welcome-corner welcome-corner-bottom-left"></span>
+          <span class="welcome-corner welcome-corner-bottom-right"></span>
+          <span class="welcome-hud-line welcome-hud-line-top"></span>
+          <span class="welcome-hud-line welcome-hud-line-bottom"></span>
+          <span class="welcome-hud-sweep"></span>
+          <div class="welcome-data welcome-data-left">
+            <span>BIOMETRÍA <b>OK</b></span>
+            <i><span></span></i>
+            <span>SEÑAL <b>ESTABLE</b></span>
+            <i><span></span></i>
+          </div>
+          <div class="welcome-data welcome-data-right">
+            <span>ESCANEO <b>ACTIVO</b></span>
+            <i><span></span></i>
+            <span>ENLACE <b>SEGURO</b></span>
+            <i><span></span></i>
+          </div>
+        </div>
+        <div class="welcome-hud-content">
+          <span class="welcome-hud-kicker"><i></i> CONEXIÓN ESTABLECIDA / 001</span>
+          <p>BIENVENIDO</p>
+          <span class="welcome-hud-caption">SISTEMA DE EXPLORACIÓN ACTIVADO</span>
+          <div class="welcome-loadout" aria-hidden="true">
+            <span>INICIALIZANDO INTERFAZ</span>
+            <i><span></span></i>
+            <b>100%</b>
+          </div>
+        </div>
+        <span class="welcome-hud-coordinate welcome-hud-coordinate-left" aria-hidden="true">LINK // 40°25′</span>
+        <span class="welcome-hud-coordinate welcome-hud-coordinate-right" aria-hidden="true">ONLINE <i></i></span>
+      </div>
+
+      <!-- Marca persistent i crida a l'acció d'introducció. -->
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Inicio del portafolio">
+          <span class="brand-mark" aria-hidden="true">J</span>
+          <span class="brand-name">PORTAFOLIO<span class="brand-dot">.</span></span>
+        </a>
+        <div class="topbar-right">
+          <span class="live-status"><span></span> ESPACIO INTERACTIVO</span>
+          <button class="sound-button" id="sound-toggle" type="button" aria-label="Activar sonido" aria-pressed="false">
+            <span aria-hidden="true">♫</span><span class="sound-label">Sonido</span>
+          </button>
+          <button class="sound-button" id="motion-toggle" type="button" aria-pressed="false">
+            <span aria-hidden="true">◌</span><span class="motion-label">Reducir movimiento</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="loading-screen" id="loading-screen" aria-labelledby="loading-title" aria-busy="true">
+        <div class="loader-shell">
+          <div class="loader-heading">
+            <span class="brand-mark" aria-hidden="true">J</span>
+            <div>
+              <span class="loader-overline">PORTAFOLIO 3D / SISTEMA DE EXPLORACIÓN</span>
+              <h2 id="loading-title">Despertando el espacio</h2>
+            </div>
+          </div>
+          <p class="loader-description" id="loading-description">Preparando el entorno, el equipo y las estaciones interactivas.</p>
+          <div class="loader-visual" aria-hidden="true">
+            <canvas id="loading-visualizer"></canvas>
+            <div class="loader-reactor">
+              <span class="reactor-aura"></span>
+              <span class="reactor-orbit reactor-orbit-outer"></span>
+              <span class="reactor-orbit reactor-orbit-middle"></span>
+              <span class="reactor-orbit reactor-orbit-inner"></span>
+              <span class="reactor-wave reactor-wave-outer"></span>
+              <span class="reactor-wave reactor-wave-inner"></span>
+              <span class="reactor-beam"></span>
+              <span class="reactor-streak reactor-streak-one"></span>
+              <span class="reactor-streak reactor-streak-two"></span>
+              <span class="reactor-streak reactor-streak-three"></span>
+              <span class="reactor-core"><i></i><b></b></span>
+            </div>
+            <span class="loader-visual-label loader-visual-label-left">SYNCHRONIZING / AUDIO 01</span>
+            <span class="loader-visual-label">NEURAL CORE <i></i></span>
+          </div>
+          <div class="loader-progress-label">
+            <span id="loading-message" role="status" aria-live="polite">CARGANDO ENTORNO</span>
+            <span id="loading-percent">00%</span>
+          </div>
+          <div class="loader-bar" role="progressbar" aria-label="Progreso de carga e introducción" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="loading-progressbar">
+            <span id="loading-progress"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="intro" id="intro" aria-labelledby="intro-title">
+        <div class="intro-copy">
+          <p class="eyebrow"><span class="eyebrow-line"></span> DISEÑADO PARA EXPLORAR</p>
+          <h1 id="intro-title">No es solo<br />un portafolio<span class="accent">.</span></h1>
+          <p class="intro-description">
+            Es un espacio para descubrir ideas, proyectos y todo lo que hay detrás de cada uno.
+          </p>
+          <div class="intro-actions">
+            <button class="primary-button" id="enter-button" type="button" disabled>
+              <span>Preparando espacio...</span><span class="button-arrow" aria-hidden="true">↗</span>
+            </button>
+            <span class="intro-time"><span class="time-dot"></span> <span id="experience-status">CARGANDO ENTORNO</span></span>
+          </div>
+          <div class="intro-controls">
+            <span class="keycap">W</span><span class="keycap">A</span><span class="keycap">S</span><span class="keycap">D</span>
+            <span class="control-copy">para moverte</span>
+            <span class="control-divider"></span>
+            <span class="mouse-icon" aria-hidden="true"><i></i></span>
+            <span class="control-copy">arrastra para mirar</span>
+          </div>
+        </div>
+      </section>
+      <div class="intro-coordinate" aria-hidden="true">
+        <span>LAT. 40°25′</span><span>LONG. 03°42′</span><span>ONLINE — 001</span>
+      </div>
+
+      <!-- Controls i indicadors visibles durant l'exploració de l'escena 3D. -->
+      <nav class="section-nav" id="section-nav" aria-label="Secciones del portafolio" aria-hidden="true" inert>
+        <div class="nav-device-top" aria-hidden="true">
+          <span class="nav-device-name"><span class="nav-device-mark"></span> WRIST LINK <span>· NAV-01</span></span>
+          <span class="nav-device-status">ONLINE</span>
+        </div>
+        <span class="nav-caption">EXPLORA EL ESPACIO</span>
+        <button class="nav-item is-active" data-section="inicio" type="button">
+          <span class="nav-index">00</span><span>Inicio</span>
+        </button>
+        <button class="nav-item" data-section="sobre-mi" type="button">
+          <span class="nav-index">01</span><span>Sobre mí</span>
+        </button>
+        <button class="nav-item" data-section="github" type="button">
+          <span class="nav-index">02</span><span>GitHub</span>
+        </button>
+        <button class="nav-item" data-section="trabajos-web" type="button">
+          <span class="nav-index">03</span><span>Proyectos</span>
+        </button>
+        <button class="nav-item" data-section="otros-proyectos" type="button">
+          <span class="nav-index">04</span><span>Contáctame</span>
+        </button>
+        <button class="nav-item" data-section="cv" type="button">
+          <span class="nav-index">05</span><span>Currículum</span>
+        </button>
+      </nav>
+
+      <aside class="location-card" id="location-card" aria-live="polite">
+        <span class="location-label"><span class="location-pulse"></span> ESTÁS EXPLORANDO</span>
+        <strong id="location-name">El espacio</strong>
+        <span id="location-description">Acércate a una estación para descubrir más.</span>
+      </aside>
+
+      <div class="crosshair" id="crosshair" aria-hidden="true"><span></span><i></i></div>
+      <div class="interaction-prompt" id="interaction-prompt" aria-hidden="true">
+        <span>Pulsa</span><span class="keycap">E</span><span>para interactuar</span>
+      </div>
+
+      <div class="mobile-controls" id="mobile-controls" aria-label="Controles táctiles">
+        <div class="mobile-pad">
+          <button type="button" data-move="forward" aria-label="Avanzar">▲</button>
+          <div>
+            <button type="button" data-move="left" aria-label="Mover a la izquierda">◀</button>
+            <button type="button" data-move="back" aria-label="Retroceder">▼</button>
+            <button type="button" data-move="right" aria-label="Mover a la derecha">▶</button>
+          </div>
+        </div>
+        <span>Mantén pulsado para moverte · arrastra para mirar</span>
+      </div>
+
+      <!-- El contingut de la secció seleccionada prové de les dades de main.js. -->
+      <section class="content-panel" id="content-panel" aria-labelledby="panel-title" aria-hidden="true">
+        <button class="panel-close" id="panel-close" type="button" aria-label="Cerrar panel">×</button>
+        <p class="eyebrow"><span class="eyebrow-line"></span><span id="panel-kicker">01 — EL ESPACIO</span></p>
+        <h2 id="panel-title">Sobre mí</h2>
+        <div class="panel-content" id="panel-content"></div>
+        <div class="panel-footer">
+          <span><span class="time-dot"></span> <span id="panel-footer-label">PORTAFOLIO INTERACTIVO</span></span>
+          <span id="panel-index">01 / 05</span>
+        </div>
+      </section>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      <footer class="footer">
+        <span>UN UNIVERSO PROPIO <span class="footer-separator">/</span> HECHO PARA EXPLORAR</span>
+        <span class="footer-right">© 2026 <span class="footer-separator">—</span> PORTAFOLIO 3D</span>
+      </footer>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
