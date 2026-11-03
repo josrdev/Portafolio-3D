@@ -1,4 +1,4 @@
-import 'aframe';
+﻿import 'aframe';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import soundtrackUrl from '../diamond_tunes-cinematic-sound-effect-327618.mp3?url';
