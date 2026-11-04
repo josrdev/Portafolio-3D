@@ -112,6 +112,10 @@ const ui = {
   soundToggle: document.querySelector('#sound-toggle'),
   motionToggle: document.querySelector('#motion-toggle'),
   mobileControls: document.querySelector('#mobile-controls'),
+  audioModal: document.querySelector('#audio-modal'),
+  audioEnableButton: document.querySelector('#audio-enable-button'),
+  audioSilentButton: document.querySelector('#audio-silent-button'),
+  audioError: document.querySelector('#audio-modal-error'),
 };
 const loadingVisualizerContext = ui.loadingVisualizer.getContext('2d');
 let loadingVisualizerSize = { width: 0, height: 0, pixelRatio: 0 };
@@ -231,7 +235,6 @@ let musicFrequencyData = null;
 let ambientDust = null;
 let cinematicIntroRequested = false;
 let lastCinematicChapter = '';
-let autoplayBlocked = false;
 const musicLevels = {
   bass: 0,
   mid: 0,
@@ -363,8 +366,8 @@ const movementHits = [];
 const spawnFloorHeight = 0.5;
 let stationLabelsStartedAt = null;
 const defaultSpawn = {
-  position: new THREE.Vector3(-2.1, playerEyeHeight + spawnFloorHeight, -2.2),
-  yaw: -2.76,
+  position: new THREE.Vector3(-2.9, playerEyeHeight + spawnFloorHeight, 1.2),
+  yaw: 0,
 };
 
 /** Indexa les malles de la sala en cel·les horitzontals per consultar el moviment i el terra. */
@@ -503,6 +506,42 @@ function revealExperience() {
   ui.loading.classList.add('is-exiting');
 }
 
+function showAudioPrompt() {
+  if (!ui.audioModal.open) ui.audioModal.showModal();
+  ui.audioEnableButton.focus({ preventScroll: true });
+}
+
+function continueWithoutAudio() {
+  if (ui.audioModal.open) ui.audioModal.close();
+  ui.audioError.hidden = true;
+  updateSoundControl(false);
+  void setSoundEnabled(false);
+  revealExperience();
+}
+
+async function enableAudioAndContinue() {
+  ui.audioEnableButton.disabled = true;
+  ui.audioError.hidden = true;
+  let enabled = false;
+  try {
+    enabled = await setSoundEnabled(true);
+  } catch (error) {
+    console.error('No se pudo activar el audio desde el diálogo inicial.', error);
+  } finally {
+    ui.audioEnableButton.disabled = false;
+  }
+
+  if (!enabled) {
+    ui.audioError.hidden = false;
+    ui.audioEnableButton.focus({ preventScroll: true });
+    return;
+  }
+
+  updateSoundControl(true);
+  if (ui.audioModal.open) ui.audioModal.close();
+  playInteractionSound('toggle-on', 0.07);
+}
+
 soundtrackAudio.addEventListener('ended', () => {
   ui.experience.classList.remove('is-music-playing');
   if (sceneReady) revealExperience();
@@ -603,25 +642,35 @@ async function setSoundEnabled(enabled) {
 
   try {
     window.clearTimeout(soundtrackPauseTimeout);
+    let resumePromise = Promise.resolve();
     if (enabled) {
-      await ambientAudioContext.resume();
-      if (requestId !== soundRequestId) return false;
+      if (ambientAudioContext.state === 'closed') {
+        throw new Error('El contexto de audio está cerrado y no se puede reanudar.');
+      }
+      if (ambientAudioContext.state === 'suspended') {
+        resumePromise = ambientAudioContext.resume();
+      }
     }
     if (enabled) {
+      let playbackPromise;
       if (player.active) {
         soundtrackGain.gain.cancelScheduledValues(ambientAudioContext.currentTime);
         soundtrackGain.gain.setTargetAtTime(0, ambientAudioContext.currentTime, 0.06);
         soundtrackAudio.pause();
         experienceAmbienceGain.gain.cancelScheduledValues(ambientAudioContext.currentTime);
         experienceAmbienceGain.gain.setTargetAtTime(0.52, ambientAudioContext.currentTime, 0.3);
-        await experienceAmbienceAudio.play();
+        playbackPromise = experienceAmbienceAudio.play();
       } else {
         if (soundtrackAudio.ended) soundtrackAudio.currentTime = 0;
         experienceAmbienceGain.gain.cancelScheduledValues(ambientAudioContext.currentTime);
         experienceAmbienceGain.gain.setTargetAtTime(0, ambientAudioContext.currentTime, 0.06);
-        await soundtrackAudio.play();
+        playbackPromise = soundtrackAudio.play();
       }
+      await Promise.all([resumePromise, playbackPromise]);
       if (requestId !== soundRequestId) return false;
+      if (ambientAudioContext.state !== 'running') {
+        throw new Error(`AudioContext no pudo pasar al estado running (estado actual: ${ambientAudioContext.state}).`);
+      }
       if (!sceneReady && !sceneLoadFailed) void startLoadingAmbience();
       if (!player.active && sceneReady && !ui.loading.classList.contains('is-hidden')) {
         cinematicIntroRequested = false;
@@ -664,12 +713,9 @@ async function setSoundEnabled(enabled) {
     ui.experience.classList.toggle('is-music-playing', musicIsPlaying);
     return true;
   } catch (error) {
-    if (enabled && error.name === 'NotAllowedError') {
-      autoplayBlocked = true;
+    if (enabled && error?.name === 'NotAllowedError') {
       updateSoundControl(false);
-      if (!ui.loading.classList.contains('is-hidden')) {
-        ui.loadingDescription.textContent = 'El navegador requiere una interacción para reproducir el audio. Toca la pantalla y la intro comenzará.';
-      }
+      console.warn('El navegador no permitió iniciar el audio.', error);
       return false;
     }
     console.error('No se pudo actualizar la banda sonora.', error);
@@ -1705,6 +1751,14 @@ ui.enter.addEventListener('click', () => {
   if (sceneReady) enterExperience();
   else if (sceneLoadFailed) window.location.reload();
 });
+ui.audioEnableButton.addEventListener('click', () => {
+  void enableAudioAndContinue();
+});
+ui.audioSilentButton.addEventListener('click', continueWithoutAudio);
+ui.audioModal.addEventListener('cancel', (event) => {
+  event.preventDefault();
+  continueWithoutAudio();
+});
 ui.panelClose.addEventListener('click', closePanel);
 ui.loading.addEventListener('transitionend', (event) => {
   if (event.target !== ui.loading || event.propertyName !== 'opacity'
@@ -1818,24 +1872,6 @@ window.addEventListener('resize', () => {
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.7));
 });
 
-/** Torna a provar la reproducció automàtica amb el primer gest si el navegador l'ha bloquejada. */
-function retryBlockedAutoplay(event) {
-  if (!autoplayBlocked || event.code === 'Tab') return;
-  autoplayBlocked = false;
-  void setSoundEnabled(true).then((success) => {
-    if (success) updateSoundControl(true);
-  });
-}
-
-document.addEventListener('pointerdown', retryBlockedAutoplay);
-document.addEventListener('keydown', retryBlockedAutoplay);
-
-/** Intenta iniciar la reproducció; el gestor de gestos anterior n'és l'alternativa. */
-async function startSoundtrackAutomatically() {
-  const started = await setSoundEnabled(true);
-  if (started) updateSoundControl(true);
-}
-
 /** Carrega els recursos de l'escena i inicia el bucle d'interacció. */
 async function start() {
   try {
@@ -1859,6 +1895,7 @@ async function start() {
     ui.enter.disabled = false;
     ui.enter.querySelector('span').textContent = 'Entrar al espacio';
     ui.introStatus.textContent = 'RECORRIDO LIBRE';
+    showAudioPrompt();
     if (soundtrackAudio.ended) revealExperience();
   } catch (error) {
     console.error('No se pudo cargar la experiencia 3D.', error);
@@ -1884,5 +1921,4 @@ if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
   ui.motionToggle.querySelector('.motion-label').textContent = 'Movimiento reducido';
 }
 
-void startSoundtrackAutomatically();
 start();

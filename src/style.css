@@ -186,6 +186,26 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--acid); outline-
 .loading-screen.is-music-playing .reactor-orbit-middle { opacity: var(--loader-high-opacity); }
 .loading-screen.is-music-playing .loader-visual-label i { background: var(--acid); box-shadow: 0 0 var(--loader-glow) var(--acid); }
 
+.audio-modal { width: min(440px, calc(100vw - 36px)); max-width: none; padding: 0; overflow: visible; color: #f4f3f1; background: transparent; border: 0; }
+.audio-modal[open] { display: grid; place-items: center; animation: audioModalIn .45s cubic-bezier(.16, 1, .3, 1) both; }
+.audio-modal::backdrop { background: rgba(3, 5, 10, .72); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); animation: audioBackdropIn .35s ease both; }
+.audio-modal-card { position: relative; display: grid; justify-items: center; width: 100%; padding: 38px 36px 30px; text-align: center; background: radial-gradient(ellipse at 50% 0, rgba(198,250,95,.09), transparent 56%), rgba(10,12,19,.97); border: 1px solid rgba(198,250,95,.25); box-shadow: 0 24px 90px rgba(0,0,0,.58), inset 0 0 34px rgba(173,140,255,.035); }
+.audio-modal-card::before { position: absolute; inset: 7px; border: 1px solid rgba(255,255,255,.055); content: ''; pointer-events: none; }
+.audio-modal-icon { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 20px; color: var(--acid); border: 1px solid rgba(198,250,95,.35); background: rgba(198,250,95,.07); box-shadow: 0 0 30px rgba(198,250,95,.1); font-size: 23px; }
+.audio-modal-kicker { color: var(--acid); font-family: var(--mono); font-size: 8px; letter-spacing: .2em; }
+.audio-modal h2 { margin: 14px 0 9px; font-size: clamp(24px, 5vw, 30px); font-weight: 600; letter-spacing: -.04em; }
+.audio-modal-card > p:not(.audio-modal-error) { max-width: 330px; margin: 0 0 24px; color: #aaaab5; font-size: 12px; line-height: 1.8; }
+.audio-modal-error { width: 100%; margin: -8px 0 16px; padding: 10px 12px; color: #ffb8a9; background: rgba(255,101,83,.08); border: 1px solid rgba(255,130,110,.25); font-size: 11px; line-height: 1.6; }
+.audio-modal-error[hidden] { display: none; }
+.audio-modal-primary, .audio-modal-secondary { width: 100%; min-height: 48px; border: 0; font-size: 11px; font-weight: 700; transition: background .2s, color .2s, border-color .2s, transform .2s; }
+.audio-modal-primary { color: #10120b; background: var(--acid); }
+.audio-modal-primary:hover { background: #d7ff83; transform: translateY(-1px); }
+.audio-modal-primary:disabled { cursor: wait; opacity: .7; }
+.audio-modal-secondary { margin-top: 9px; color: #b7b7c1; background: transparent; border: 1px solid rgba(255,255,255,.12); font-weight: 500; }
+.audio-modal-secondary:hover { color: #f4f3f1; border-color: rgba(198,250,95,.38); background: rgba(198,250,95,.045); }
+@keyframes audioModalIn { from { opacity: 0; transform: translateY(12px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes audioBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+
 .topbar, .footer { position: absolute; z-index: 30; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; }
 .topbar { top: 0; height: 82px; padding: 0 5.2%; border-bottom: 1px solid rgba(255,255,255,.07); }
 .brand { display: inline-flex; gap: 12px; align-items: center; text-decoration: none; }
@@ -421,6 +441,9 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--acid); outline-
 }
 
 @media (max-width: 480px) {
+  .audio-modal-card { padding: 32px 24px 24px; }
+  .audio-modal-icon { width: 42px; height: 42px; margin-bottom: 16px; }
+  .audio-modal-card > p:not(.audio-modal-error) { font-size: 11px; }
   .loader-shell { padding: 19px 17px 18px; }
   .loader-overline { font-size: 7px; }
   .loader-heading .brand-mark { flex-basis: 36px; width: 36px; height: 36px; }
